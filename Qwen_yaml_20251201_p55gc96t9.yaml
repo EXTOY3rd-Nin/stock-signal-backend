@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: stock-signal-backend
+    env: python
+    region: oregon
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python app.py"
+    envVars:
+      - key: FMP_API_KEY
+        sync: false
