@@ -6,5 +6,5 @@ services:
     buildCommand: "pip install -r requirements.txt"
     startCommand: "python app.py"
     envVars:
-      - key: FMP_API_KEY
+      - key: 3cNanCgIW7CR4hL5zpQqTo2jc9cPvy0k
         sync: false
