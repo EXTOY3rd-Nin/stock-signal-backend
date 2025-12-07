@@ -1,8 +1,8 @@
-from flask import Flask, jsonify, request
-from flask_cors import CORS
+import os
 import yfinance as yf
 import requests
-import os
+from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)  # อนุญาตให้เว็บภายนอกเรียก API ได้
