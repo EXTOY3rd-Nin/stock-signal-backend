@@ -4,6 +4,16 @@ import requests
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+@app.route('/')
+def home():
+    return jsonify({
+        "message": "Stock Signal API is running!",
+        "endpoints": {
+            "/hybrid-signal?symbol=AAPL": "Get buy/sell signal",
+            "/screener": "Get list of recommended stocks",
+            "/candle-data?symbol=AAPL": "Get candlestick data"
+        }
+    })
 app = Flask(__name__)
 CORS(app)  # อนุญาตให้เว็บภายนอกเรียก API ได้
 
@@ -132,5 +142,6 @@ def candle_data():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
+    import os
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port) 
