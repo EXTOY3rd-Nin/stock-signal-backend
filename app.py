@@ -5,9 +5,8 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # อนุญาตให้เว็บภายนอกเรียก API ได้
+CORS(app)
 
-# ใช้ FMP API Key จาก environment variable
 FMP_API_KEY = os.environ.get("FMP_API_KEY", "YOUR_KEY_HERE")
 
 def get_fundamental_data(symbol):
@@ -68,33 +67,69 @@ def get_technical_data(symbol):
         }
     except:
         return None
+
 @app.route('/')
 def home():
     return jsonify({
         "message": "Stock Signal API is running!",
         "endpoints": {
-            "/hybrid-signal?symbol=AAPL": "Get buy/sell signal",
+            "/hybrid-signal?symbol=AAPL": "Get buy/sell signal with entry, SL, TP",
             "/screener": "Get list of recommended stocks",
             "/candle-data?symbol=AAPL": "Get candlestick data"
         }
     })
-    
+
 @app.route('/hybrid-signal')
 def hybrid_signal():
     symbol = request.args.get('symbol', 'AAPL').upper()
     tech = get_technical_data(symbol)
     if not tech or not tech["golden_cross"] or not (40 <= tech["rsi"] <= 65):
-        return jsonify({"symbol": symbol, "signal": "HOLD", "reason": "Technical not ready", "price": tech["price"] if tech else None})
+        return jsonify({
+            "symbol": symbol,
+            "signal": "HOLD",
+            "reason": "Technical not ready",
+            "price": tech["price"] if tech else None
+        })
     
     fund = get_fundamental_data(symbol)
     if not is_fundamentally_strong(fund):
-        return jsonify({"symbol": symbol, "signal": "HOLD", "reason": "Weak fundamentals", "price": tech["price"]})
+        return jsonify({
+            "symbol": symbol,
+            "signal": "HOLD",
+            "reason": "Weak fundamentals",
+            "price": tech["price"]
+        })
+
+    current_price = tech["price"]
+    
+    # หา Support จาก 10 วันล่าสุด
+    try:
+        hist = yf.download(symbol, period="30d", interval="1d")
+        recent_low = hist['Low'].tail(10).min()
+    except:
+        recent_low = current_price * 0.95
+
+    entry = current_price
+    stop_loss = recent_low * 0.98
+    risk = entry - stop_loss
+    take_profit = entry + 2 * risk
+
+    # ป้องกันค่าผิดปกติ
+    if stop_loss <= 0 or take_profit <= entry:
+        stop_loss = entry * 0.95
+        take_profit = entry * 1.10
 
     return jsonify({
         "symbol": symbol,
         "signal": "BUY",
-        "price": tech["price"],
-        "technical": {"rsi": round(tech["rsi"], 2), "golden_cross": True},
+        "price": current_price,
+        "entry": round(entry, 2),
+        "stop_loss": round(stop_loss, 2),
+        "take_profit": round(take_profit, 2),
+        "technical": {
+            "rsi": round(tech["rsi"], 2),
+            "golden_cross": True
+        },
         "fundamental": {
             "pe": fund.get("pe"),
             "roe": round(fund.get("roe"), 2) if fund.get("roe") else None,
@@ -142,6 +177,5 @@ def candle_data():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    import os
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port) 
+    app.run(host='0.0.0.0', port=port)
