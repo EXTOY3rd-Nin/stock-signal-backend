@@ -4,16 +4,6 @@ import requests
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-@app.route('/')
-def home():
-    return jsonify({
-        "message": "Stock Signal API is running!",
-        "endpoints": {
-            "/hybrid-signal?symbol=AAPL": "Get buy/sell signal",
-            "/screener": "Get list of recommended stocks",
-            "/candle-data?symbol=AAPL": "Get candlestick data"
-        }
-    })
 app = Flask(__name__)
 CORS(app)  # อนุญาตให้เว็บภายนอกเรียก API ได้
 
@@ -78,7 +68,17 @@ def get_technical_data(symbol):
         }
     except:
         return None
-
+@app.route('/')
+def home():
+    return jsonify({
+        "message": "Stock Signal API is running!",
+        "endpoints": {
+            "/hybrid-signal?symbol=AAPL": "Get buy/sell signal",
+            "/screener": "Get list of recommended stocks",
+            "/candle-data?symbol=AAPL": "Get candlestick data"
+        }
+    })
+    
 @app.route('/hybrid-signal')
 def hybrid_signal():
     symbol = request.args.get('symbol', 'AAPL').upper()
